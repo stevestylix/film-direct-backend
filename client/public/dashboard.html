@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Creator Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+      background: #f3f3f3;
+    }
+    h1 {
+      color: #222;
+      text-align: center;
+    }
+    .stats {
+      background: #fff;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .video-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    video {
+      width: 100%;
+      max-height: 300px;
+      margin-top: 10px;
+      border-radius: 4px;
+    }
+    .video-card button {
+      margin-top: 10px;
+      padding: 6px 12px;
+      background: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .video-card button:hover {
+      background: #0056b3;
+    }
+    .pagination {
+      margin-top: 20px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .pagination button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      background: #007BFF;
+      color: white;
+      cursor: pointer;
+    }
+    .pagination button:disabled {
+      background: #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Your Film Dashboard</h1>
+  <div class="stats" id="stats">Loading stats...</div>
+  <div id="videos">Loading films...</div>
+
+  <div class="pagination">
+    <button id="prevBtn">Previous</button>
+    <button id="nextBtn">Next</button>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) {
+      window.location.href = '/auth.html';
+    }
+
+    let currentPage = 1;
+    const limit = 5;
+
+    async function fetchDashboard(page = 1) {
+      try {
+        const res = await fetch(`/api/dashboard?page=${page}&limit=${limit}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            alert('Session expired. Please log in again.');
+            localStorage.removeItem('token');
+            window.location.href = '/auth.html';
+            return;
+          }
+          throw new Error('Failed to load dashboard');
+        }
+
+        const data = await res.json();
+        displayStats(data);
+        displayVideos(data.films || []);
+
+        document.getElementById('prevBtn').disabled = page === 1;
+        document.getElementById('nextBtn').disabled = page >= (data.stats?.totalPages || 1);
+        currentPage = page;
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('videos').innerHTML = '<p>Error loading dashboard.</p>';
+      }
+    }
+
+    function displayStats(data) {
+      const statsDiv = document.getElementById('stats');
+      statsDiv.innerHTML = `
+        <strong>User:</strong> ${data.user.email}<br>
+        <strong>Films Uploaded:</strong> ${data.stats.filmsUploaded}<br>
+        <strong>Total Sales:</strong> ${data.stats.totalSales}<br>
+        <strong>Last Login:</strong> ${new Date(data.stats.lastLogin).toLocaleString()}
+      `;
+    }
+
+    function displayVideos(videos) {
+      const container = document.getElementById('videos');
+      container.innerHTML = '';
+      if (videos.length === 0) {
+        container.innerHTML = '<p>No films uploaded yet.</p>';
+        return;
+      }
+      videos.forEach(video => {
+        const div = document.createElement('div');
+        div.className = 'video-card';
+        div.innerHTML = `
+          <h3>${video.title}</h3>
+          <video controls>
+            <source src="/uploads/${video.trailer || video.filename}" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <p>${video.description}</p>
+          <button onclick="location.href='/film.html?id=${video._id}'">Manage</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      if (currentPage > 1) fetchDashboard(currentPage - 1);
+    });
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      fetchDashboard(currentPage + 1);
+    });
+
+    fetchDashboard();
+  </script>
+
+</body>
+</html>

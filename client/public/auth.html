@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MADE FOR EYE MAX - Login / Signup</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body, html {
+      height: 100%;
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: url('Images/Nairobi.jpg') no-repeat center center fixed;
+      background-size: cover;
+    }
+    .auth-container {
+      backdrop-filter: blur(4px);
+      background-color: rgba(0, 0, 0, 0.4);
+      color: #fff;
+      max-width: 400px;
+      margin: 5% auto;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    .auth-container h2 {
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    .auth-container input {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #fff;
+    }
+    .auth-container input::placeholder {
+      color: #ccc;
+    }
+    .auth-container .btn-primary {
+      background: #ff0055;
+      border: none;
+    }
+    .toggle-btn {
+      color: #ccc;
+      cursor: pointer;
+      text-align: center;
+      margin-top: 1rem;
+    }
+    .brand-tag {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-container">
+    <h2 id="form-title">Sign Up</h2>
+
+    <form id="auth-form">
+      <div class="mb-3" id="username-group">
+        <input type="text" id="username" class="form-control" placeholder="Username" required />
+      </div>
+      <div class="mb-3">
+        <input type="email" id="email" class="form-control" placeholder="Email" required />
+      </div>
+      <div class="mb-3">
+        <input type="password" id="password" class="form-control" placeholder="Password" required />
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Sign Up</button>
+    </form>
+
+    <div class="toggle-btn" onclick="toggleForm()">Already have an account? <u>Login</u></div>
+    <div class="brand-tag">MADE FOR EYE MAX</div>
+  </div>
+
+  <script>
+    let isLogin = false;
+
+    function toggleForm() {
+      isLogin = !isLogin;
+      document.getElementById("form-title").textContent = isLogin ? "Login" : "Sign Up";
+      document.querySelector(".toggle-btn").innerHTML = isLogin
+        ? `Don't have an account? <u>Sign Up</u>`
+        : `Already have an account? <u>Login</u>`;
+      document.getElementById("username-group").style.display = isLogin ? "none" : "block";
+      document.querySelector("button").textContent = isLogin ? "Login" : "Sign Up";
+    }
+
+    document.getElementById("auth-form").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const username = document.getElementById("username").value.trim();
+
+      const endpoint = isLogin ? '/api/users/login' : '/api/users/register';
+      const payload = isLogin ? { email, password } : { email, password, username };
+
+      try {
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          // ✅ Store the JWT token
+          localStorage.setItem("token", data.token);
+          // ✅ Redirect to dashboard
+          window.location.href = "/dashboard.html";
+        } else {
+          alert(data.error || "Authentication failed");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Something went wrong. Try again.");
+      }
+    });
+  </script>
+
+</body>
+</html>
